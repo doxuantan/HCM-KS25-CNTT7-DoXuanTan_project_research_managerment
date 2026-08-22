@@ -70,6 +70,7 @@ def register(user_data: UserCreate, request: Request, db: Session = Depends(get_
     )
 
 
+# day2-task 3: login
 @router.post("/login", status_code=status.HTTP_200_OK)
 def login(
     user_data: UserLogin,

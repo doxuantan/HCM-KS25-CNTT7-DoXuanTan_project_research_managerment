@@ -29,6 +29,9 @@ def test_database(request: Request, db: Session = Depends(get_db)):
     )
 
 
+# day 2 -task 3: login
+
+
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 def register(user_data: UserCreate, request: Request, db: Session = Depends(get_db)):
     """
@@ -63,5 +66,60 @@ def register(user_data: UserCreate, request: Request, db: Session = Depends(get_
         statusCode=status.HTTP_201_CREATED,
         message="Đăng ký tài khoản thành công",
         data=UserResponse.model_validate(new_user).model_dump(),
+        request=request,
+    )
+
+
+@router.post("/login", status_code=status.HTTP_200_OK)
+def login(
+    user_data: UserLogin,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """
+    Đăng nhập và nhận access token JWT.
+    """
+
+    # Tìm user theo email
+    user = db.query(User).filter(User.email == user_data.email).first()
+
+    # Email không tồn tại
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Email hoặc mật khẩu không chính xác",
+        )
+
+    # Kiểm tra mật khẩu
+    if not verify_password(
+        user_data.password,
+        user.password_hash,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Email hoặc mật khẩu không chính xác",
+        )
+
+    # Kiểm tra tài khoản có đang hoạt động không
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tài khoản đã bị khóa",
+        )
+
+    # Tạo access token JWT
+    access_token = create_access_token(
+        user_id=user.id,
+        role=user.role,
+    )
+
+    # Trả access token
+    return success_full(
+        statusCode=status.HTTP_200_OK,
+        message="Đăng nhập thành công",
+        data={
+            "access_token": access_token,
+            "token_type": "bearer",
+        },
         request=request,
     )

@@ -67,3 +67,16 @@ def get_current_user(
         )
 
     return user
+
+
+# day 2- task 5: Role guard
+
+
+def require_admin(current_user: User = Depends(get_current_user)):
+    # Chỉ cho phép ADMIN
+    if current_user.role != "ADMIN":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Bạn không có quyền truy cập"
+        )
+
+    return current_user

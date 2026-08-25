@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
-
+from app.schemas.user import OwnerRespone
 
 class ResearchProjectBase(BaseModel):
     name: str = Field(
@@ -28,7 +28,7 @@ class ResearchProjectUpdate(BaseModel):
 
 class ResearchProjectResponse(ResearchProjectBase):
     id: int
-    owner_id: int
+    owner: OwnerRespone
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

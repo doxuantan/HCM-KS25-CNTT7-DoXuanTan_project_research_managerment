@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
-
+from app.schemas.user import UserInfo
 
 class ResearchMemberBase(BaseModel):
     role: str = "MEMBER"
@@ -17,7 +17,7 @@ class ResearchMemberUpdate(BaseModel):
 
 class ResearchMemberResponse(ResearchMemberBase):
     project_id: int
-    user_id: int
+    user: UserInfo
     joined_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

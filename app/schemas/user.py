@@ -35,3 +35,9 @@ class OwnerRespone(BaseModel):
     email: EmailStr
     full_name: str
     model_config = ConfigDict(from_attributes=True)
+
+class UserInfo(BaseModel):
+    full_name: str
+    email: EmailStr
+
+    model_config = ConfigDict(from_attributes=True)

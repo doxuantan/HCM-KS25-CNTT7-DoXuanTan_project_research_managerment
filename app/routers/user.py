@@ -4,15 +4,15 @@ from sqlalchemy.orm import Session
 from app.models.user import User
 from app.db.database import get_db
 
-from app.core.dependencies import *
+from app.core.dependencies import (
+    get_current_user,
+    require_admin,
+)
 
 from app.core.responses import success_full
 from app.schemas.user import UserResponse
 
-from app.services.user_service import (
-    get_current_user as get_current_user_service,
-    get_users as get_users_service,
-)
+from app.services.user_service import get_users
 
 
 router = APIRouter(
@@ -21,8 +21,10 @@ router = APIRouter(
 )
 
 
-# day 2-task 6
-# Lấy thông tin người dùng hiện tại
+# =========================================================
+# DAY 2 - TASK 6
+# GET /users/me
+# =========================================================
 @router.get(
     "/me",
     status_code=status.HTTP_200_OK,
@@ -30,30 +32,30 @@ router = APIRouter(
 def get_me(
     request: Request,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
 ):
     """
     Lấy thông tin người dùng hiện tại.
     """
-    user = get_current_user_service(
-        db=db,
-        user_id=current_user.id,
-    )
+
     return success_full(
         statusCode=status.HTTP_200_OK,
         message="Lấy thông tin người dùng thành công",
-        data=UserResponse.model_validate(user).model_dump(),
+        data=UserResponse.model_validate(
+            current_user
+        ).model_dump(),
         request=request,
     )
 
 
-# day 2-task 7
-# Lấy danh sách người dùng
+# =========================================================
+# DAY 2 - TASK 7
+# GET /users
+# =========================================================
 @router.get(
     "",
     status_code=status.HTTP_200_OK,
 )
-def get_users(
+def get_users_list(
     request: Request,
     name: str | None = None,
     email: str | None = None,
@@ -66,7 +68,7 @@ def get_users(
     Chỉ ADMIN được phép truy cập.
     """
 
-    users = get_users_service(
+    users = get_users(
         db=db,
         name=name,
         email=email,
@@ -76,6 +78,11 @@ def get_users(
     return success_full(
         statusCode=status.HTTP_200_OK,
         message="Lấy danh sách người dùng thành công",
-        data=[UserResponse.model_validate(user).model_dump() for user in users],
+        data=[
+            UserResponse.model_validate(
+                user
+            ).model_dump()
+            for user in users
+        ],
         request=request,
     )

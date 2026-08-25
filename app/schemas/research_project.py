@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional
-from app.schemas.user import OwnerRespone
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -23,13 +23,12 @@ class ResearchProjectUpdate(BaseModel):
         min_length=1,
         max_length=255,
     )
-
     description: Optional[str] = None
 
 
 class ResearchProjectResponse(ResearchProjectBase):
     id: int
-    owner: OwnerRespone
+    owner_id: int
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

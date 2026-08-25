@@ -13,7 +13,7 @@ class ResearchTaskBase(BaseModel):
 
 
 class ResearchTaskCreate(ResearchTaskBase):
-    project_id: int
+    pass
 
 
 class ResearchTaskUpdate(BaseModel):

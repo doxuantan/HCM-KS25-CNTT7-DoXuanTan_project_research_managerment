@@ -24,7 +24,7 @@ def create_research_project(
     User đăng nhập sẽ trở thành OWNER.
     """
 
-    # Kiểm tra tên không được rỗng hoặc toàn khoảng trắng
+    # Kiểm tra tên đề tài
     if not project_data.name.strip():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -51,12 +51,13 @@ def create_research_project(
         owner_id=owner_id,
     )
 
-    # Lưu project
     db.add(new_project)
+
+    # Lưu project để lấy new_project.id
     db.commit()
     db.refresh(new_project)
 
-    # Tạo OWNER trong bảng research_members
+    # Tạo member với role OWNER
     owner_member = ResearchMember(
         project_id=new_project.id,
         user_id=owner_id,
@@ -65,7 +66,6 @@ def create_research_project(
 
     db.add(owner_member)
     db.commit()
-    db.refresh(owner_member)
 
     return new_project
 
@@ -156,6 +156,7 @@ def get_research_project_detail(
         .first()
     )
 
+    # Project không tồn tại
     if project is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -176,6 +177,7 @@ def get_research_project_detail(
         .first()
     )
 
+    # Không phải OWNER và cũng không phải MEMBER
     if member is None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -280,16 +282,16 @@ def delete_research_project(
             detail="Chỉ OWNER mới được xóa đề tài nghiên cứu",
         )
 
-    # Xóa các member của project
-    db.query(ResearchMember).filter(
-        ResearchMember.project_id == project_id
+    # Xóa các task thuộc project
+    db.query(ResearchTask).filter(
+        ResearchTask.project_id == project_id
     ).delete(
         synchronize_session=False
     )
 
-    # Xóa các task của project
-    db.query(ResearchTask).filter(
-        ResearchTask.project_id == project_id
+    # Xóa các member thuộc project
+    db.query(ResearchMember).filter(
+        ResearchMember.project_id == project_id
     ).delete(
         synchronize_session=False
     )

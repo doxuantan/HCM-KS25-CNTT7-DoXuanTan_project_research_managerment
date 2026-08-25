@@ -10,12 +10,16 @@ from app.models.research_task import *
 
 from app.routers.auth import router as auth_router
 from app.routers.health import router as health_router
-from app.routers.users import router as users_router
-
+from app.routers.user import router as users_router
+from app.routers.research_project import router as research_projects_router
+from app.routers.research_members import router as research_members_router
 from app.core.responses import error_full
 
 
-app = FastAPI(title="Research Group Management API")
+app = FastAPI(
+    title="Research Group Management API",
+    description="Chào mựng bạn đã đến với hệ thống RESEARCH GROUP MANAGEMENT API",
+)
 
 Base.metadata.create_all(bind=engine)
 
@@ -43,6 +47,8 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 app.include_router(auth_router)
 app.include_router(health_router)
 app.include_router(users_router)
+app.include_router(research_projects_router)
+app.include_router(research_members_router)
 
 
 # =========================

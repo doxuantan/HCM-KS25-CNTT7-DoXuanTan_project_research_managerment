@@ -4,34 +4,55 @@ from sqlalchemy.orm import Session
 from app.models.user import User
 from app.db.database import get_db
 
-from app.core.dependencies import get_current_user, require_admin
-from app.core.responses import success_full
+from app.core.dependencies import *
 
+from app.core.responses import success_full
 from app.schemas.user import UserResponse
 
-router = APIRouter(prefix="/users", tags=["User"])
+from app.services.user_service import (
+    get_current_user as get_current_user_service,
+    get_users as get_users_service,
+)
 
 
-# day 2-task 6: lấy thông tin người dùng hiện tại
-@router.get("/me", status_code=status.HTTP_200_OK)
+router = APIRouter(
+    prefix="/users",
+    tags=["User"],
+)
+
+
+# day 2-task 6
+# Lấy thông tin người dùng hiện tại
+@router.get(
+    "/me",
+    status_code=status.HTTP_200_OK,
+)
 def get_me(
     request: Request,
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """
     Lấy thông tin người dùng hiện tại.
     """
-
+    user = get_current_user_service(
+        db=db,
+        user_id=current_user.id,
+    )
     return success_full(
         statusCode=status.HTTP_200_OK,
         message="Lấy thông tin người dùng thành công",
-        data=UserResponse.model_validate(current_user).model_dump(),
+        data=UserResponse.model_validate(user).model_dump(),
         request=request,
     )
 
 
-# day2-task 7
-@router.get("", status_code=status.HTTP_200_OK)
+# day 2-task 7
+# Lấy danh sách người dùng
+@router.get(
+    "",
+    status_code=status.HTTP_200_OK,
+)
 def get_users(
     request: Request,
     name: str | None = None,
@@ -45,21 +66,12 @@ def get_users(
     Chỉ ADMIN được phép truy cập.
     """
 
-    query = db.query(User)
-
-    # Tìm theo tên
-    if name:
-        query = query.filter(User.full_name.ilike(f"%{name}%"))
-
-    # Tìm theo email
-    if email:
-        query = query.filter(User.email.ilike(f"%{email}%"))
-
-    # Lọc theo trạng thái
-    if is_active is not None:
-        query = query.filter(User.is_active == is_active)
-
-    users = query.all()
+    users = get_users_service(
+        db=db,
+        name=name,
+        email=email,
+        is_active=is_active,
+    )
 
     return success_full(
         statusCode=status.HTTP_200_OK,

@@ -3,8 +3,6 @@ from sqlalchemy.orm import Session
 
 from app.models.research_project import ResearchProject
 from app.models.research_member import ResearchMember
-from app.models.user import User
-
 from app.schemas.research_project import (
     ResearchProjectCreate,
     ResearchProjectUpdate,
@@ -24,34 +22,12 @@ def create_research_project(
     User đăng nhập sẽ trở thành OWNER.
     """
 
-    # Kiểm tra tên đề tài không được toàn khoảng trắng
-    if not project_data.name.strip():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Tên đề tài không được để trống",
-        )
-
-    # Kiểm tra user tồn tại
-    user = (
-        db.query(User)
-        .filter(User.id == owner_id)
-        .first()
-    )
-
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Người dùng không tồn tại",
-        )
-
-    # Tạo project
     new_project = ResearchProject(
-        name=project_data.name.strip(),
+        name=project_data.name,
         description=project_data.description,
         owner_id=owner_id,
     )
 
-    # Lưu database
     db.add(new_project)
     db.commit()
     db.refresh(new_project)
@@ -68,67 +44,32 @@ def get_research_projects(
     name: str | None = None,
 ):
     """
-    Lấy danh sách project mà user:
-    - là OWNER
-    - hoặc là MEMBER
-
-    Có thể tìm kiếm theo tên project.
+    Lấy danh sách project mà user là OWNER hoặc MEMBER.
     """
 
-    # Kiểm tra user tồn tại
-    user = (
-        db.query(User)
-        .filter(User.id == user_id)
-        .first()
-    )
-
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Người dùng không tồn tại",
-        )
-
-    # Lấy project mà user là OWNER
     owner_projects = (
-        db.query(ResearchProject)
-        .filter(ResearchProject.owner_id == user_id)
-        .all()
+        db.query(ResearchProject).filter(ResearchProject.owner_id == user_id).all()
     )
-
-    # Lấy các project mà user là MEMBER
     member_records = (
-        db.query(ResearchMember)
-        .filter(ResearchMember.user_id == user_id)
-        .all()
+        db.query(ResearchMember).filter(ResearchMember.user_id == user_id).all()
     )
 
     projects = owner_projects.copy()
 
     for member in member_records:
-
         project = (
             db.query(ResearchProject)
-            .filter(
-                ResearchProject.id == member.project_id
-            )
+            .filter(ResearchProject.id == member.project_id)
             .first()
         )
 
         if project and project not in projects:
             projects.append(project)
 
-    # Search theo tên
     if name:
-        name = name.strip()
-
-        if name:
-            projects = [
-                project
-                for project in projects
-                if name.lower() in project.name.lower()
-            ]
-        else:
-            projects = []
+        projects = [
+            project for project in projects if name.lower() in project.name.lower()
+        ]
 
     return projects
 
@@ -146,12 +87,7 @@ def get_research_project_detail(
     Chỉ OWNER hoặc MEMBER mới được xem.
     """
 
-    # Tìm project
-    project = (
-        db.query(ResearchProject)
-        .filter(ResearchProject.id == project_id)
-        .first()
-    )
+    project = db.query(ResearchProject).filter(ResearchProject.id == project_id).first()
 
     if project is None:
         raise HTTPException(
@@ -159,11 +95,9 @@ def get_research_project_detail(
             detail="Đề tài nghiên cứu không tồn tại",
         )
 
-    # OWNER được xem
     if project.owner_id == user_id:
         return project
 
-    # Kiểm tra MEMBER
     member = (
         db.query(ResearchMember)
         .filter(
@@ -197,11 +131,7 @@ def update_research_project(
     """
 
     # Tìm project
-    project = (
-        db.query(ResearchProject)
-        .filter(ResearchProject.id == project_id)
-        .first()
-    )
+    project = db.query(ResearchProject).filter(ResearchProject.id == project_id).first()
 
     if project is None:
         raise HTTPException(
@@ -216,16 +146,9 @@ def update_research_project(
             detail="Chỉ OWNER mới được cập nhật đề tài nghiên cứu",
         )
 
-    # Kiểm tra tên khi cập nhật
+    # Cập nhật name
     if project_data.name is not None:
-
-        if not project_data.name.strip():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Tên đề tài không được để trống",
-            )
-
-        project.name = project_data.name.strip()
+        project.name = project_data.name
 
     # Cập nhật description
     if project_data.description is not None:
@@ -251,11 +174,7 @@ def delete_research_project(
     """
 
     # Tìm project
-    project = (
-        db.query(ResearchProject)
-        .filter(ResearchProject.id == project_id)
-        .first()
-    )
+    project = db.query(ResearchProject).filter(ResearchProject.id == project_id).first()
 
     if project is None:
         raise HTTPException(

@@ -20,7 +20,6 @@ def get_current_user(
 ):
     # Lấy access token từ Authorization: Bearer <token>
     token = credentials.credentials
-
     try:
         # Giải mã và kiểm tra JWT
         payload = jwt.decode(
@@ -28,10 +27,8 @@ def get_current_user(
             settings.SECRET_KEY,
             algorithms=[settings.JWT_ALGORITHM],
         )
-
         # Lấy user_id từ claim sub
         user_id = payload.get("sub")
-
         if user_id is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

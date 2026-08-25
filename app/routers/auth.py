@@ -1,20 +1,37 @@
-from fastapi import APIRouter, Depends, status, Request, HTTPException
+from fastapi import APIRouter, Depends, status, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
-from app.schemas.user import *
-from app.models.user import *
-from app.db.database import *
-from app.services.user_service import *
-from app.core.security import *
+from app.schemas.user import UserCreate, UserLogin, UserResponse
+from app.models.user import User
+from app.db.database import get_db
+
 from app.core.responses import success_full
+from app.core.dependencies import require_admin
+
+from app.services.auth_service import (
+    register_user,
+    login_user,
+)
 
 
-router = APIRouter(prefix="/api/auth", tags=["Authentication"])
+router = APIRouter(
+    prefix="/api/auth",
+    tags=["Authentication"],
+)
 
 
-@router.get("/test-db", status_code=status.HTTP_200_OK)
-def test_database(request: Request, db: Session = Depends(get_db)):
+# =========================================================
+# TEST DATABASE
+# =========================================================
+@router.get(
+    "/test-db",
+    status_code=status.HTTP_200_OK,
+)
+def test_database(
+    request: Request,
+    db: Session = Depends(get_db),
+):
     """
     Kiểm tra kết nối Database.
     """
@@ -29,39 +46,27 @@ def test_database(request: Request, db: Session = Depends(get_db)):
     )
 
 
-# day 2 -task 3: login
-
-
-@router.post("/register", status_code=status.HTTP_201_CREATED)
-def register(user_data: UserCreate, request: Request, db: Session = Depends(get_db)):
+# =========================================================
+# REGISTER
+# =========================================================
+@router.post(
+    "/register",
+    status_code=status.HTTP_201_CREATED,
+)
+def register(
+    user_data: UserCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+):
     """
     Đăng ký tài khoản mới.
     """
 
-    # Kiểm tra email đã tồn tại
-    existing_user = db.query(User).filter(User.email == user_data.email).first()
-
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Email đã được đăng ký"
-        )
-
-    # Hash mật khẩu
-    password_hash = hash_password(user_data.password)
-
-    # Tạo user mới
-    new_user = User(
-        email=user_data.email,
-        full_name=user_data.full_name,
-        password_hash=password_hash,
+    new_user = register_user(
+        user_data=user_data,
+        db=db,
     )
 
-    # Lưu vào database
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-
-    # Trả response
     return success_full(
         statusCode=status.HTTP_201_CREATED,
         message="Đăng ký tài khoản thành công",
@@ -70,8 +75,13 @@ def register(user_data: UserCreate, request: Request, db: Session = Depends(get_
     )
 
 
-# day2-task 3: login
-@router.post("/login", status_code=status.HTTP_200_OK)
+# =========================================================
+# LOGIN
+# =========================================================
+@router.post(
+    "/login",
+    status_code=status.HTTP_200_OK,
+)
 def login(
     user_data: UserLogin,
     request: Request,
@@ -81,46 +91,40 @@ def login(
     Đăng nhập và nhận access token JWT.
     """
 
-    # Tìm user theo email
-    user = db.query(User).filter(User.email == user_data.email).first()
-
-    # Email không tồn tại
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Email hoặc mật khẩu không chính xác",
-        )
-
-    # Kiểm tra mật khẩu
-    if not verify_password(
-        user_data.password,
-        user.password_hash,
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Email hoặc mật khẩu không chính xác",
-        )
-
-    # Kiểm tra tài khoản có đang hoạt động không
-    if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Tài khoản đã bị khóa",
-        )
-
-    # Tạo access token JWT
-    access_token = create_access_token(
-        user_id=user.id,
-        role=user.role,
+    token_data = login_user(
+        user_data=user_data,
+        db=db,
     )
 
-    # Trả access token
     return success_full(
         statusCode=status.HTTP_200_OK,
         message="Đăng nhập thành công",
+        data=token_data,
+        request=request,
+    )
+
+
+# =========================================================
+# HELLO ADMIN
+# =========================================================
+@router.get(
+    "/hello",
+    status_code=status.HTTP_200_OK,
+)
+def hello_admin(
+    request: Request,
+    current_user: User = Depends(require_admin),
+):
+    """
+    Xin chào ADMIN.
+    Chỉ ADMIN mới được truy cập.
+    """
+
+    return success_full(
+        statusCode=status.HTTP_200_OK,
+        message="Xin chào Admin",
         data={
-            "access_token": access_token,
-            "token_type": "bearer",
+            "message": f"Xin chào Admin {current_user.full_name}",
         },
         request=request,
     )

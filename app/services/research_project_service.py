@@ -11,6 +11,8 @@ from app.schemas.research_project import (
 )
 
 
+from app.core.exceptions import *
+
 # =========================================================
 # TASK 1: Tạo đề tài nghiên cứu
 # =========================================================
@@ -270,10 +272,7 @@ def delete_research_project(
     )
 
     if project is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Đề tài nghiên cứu không tồn tại",
-        )
+        raise not_found("Đề tài nghiên cứu không tồn tại")
 
     # Kiểm tra OWNER
     if project.owner_id != user_id:

@@ -29,3 +29,9 @@ class UserResponse(UserBase):
     is_active: bool
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class OwnerRespone(BaseModel):
+    email: EmailStr
+    full_name: str
+    model_config = ConfigDict(from_attributes=True)

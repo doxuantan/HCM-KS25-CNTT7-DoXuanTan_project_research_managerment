@@ -94,24 +94,30 @@ def get_research_project_detail(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Đề tài nghiên cứu không tồn tại",
         )
-
+    
     if project.owner_id == user_id:
         return project
 
-    member = (
-        db.query(ResearchMember)
-        .filter(
-            ResearchMember.project_id == project_id,
-            ResearchMember.user_id == user_id,
-        )
-        .first()
-    )
+    # member = (
+    #     db.query(ResearchMember)
+    #     .filter(
+    #         ResearchMember.project_id == project_id,
+    #         ResearchMember.user_id == user_id,
+    #     )
+    #     .first()
+    # )
+    
+    if project.members is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Bạn không phải thành viên của đề tài nghiên cứu",
+            )
 
-    if member is None:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Bạn không phải thành viên của đề tài nghiên cứu",
-        )
+    # if member is None:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_403_FORBIDDEN,
+    #         detail="Bạn không phải thành viên của đề tài nghiên cứu",
+    #     )
 
     return project
 

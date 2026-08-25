@@ -27,6 +27,7 @@ router = APIRouter(
 
 # =========================================================
 # POST /research-projects/{project_id}/members
+# Thêm thành viên
 # =========================================================
 @router.post(
     "/{project_id}/members",
@@ -40,7 +41,7 @@ def add_project_member(
     db: Session = Depends(get_db),
 ):
     """
-    OWNER thêm thành viên vào project.
+    OWNER thêm user vào đề tài nghiên cứu.
     """
 
     member = add_member(
@@ -53,13 +54,16 @@ def add_project_member(
     return success_full(
         statusCode=status.HTTP_201_CREATED,
         message="Thêm thành viên thành công",
-        data=ResearchMemberResponse.model_validate(member).model_dump(),
+        data=ResearchMemberResponse.model_validate(
+            member
+        ).model_dump(),
         request=request,
     )
 
 
 # =========================================================
 # GET /research-projects/{project_id}/members
+# Danh sách thành viên
 # =========================================================
 @router.get(
     "/{project_id}/members",
@@ -72,7 +76,7 @@ def get_project_members(
     db: Session = Depends(get_db),
 ):
     """
-    Lấy danh sách thành viên của project.
+    OWNER hoặc MEMBER được xem danh sách thành viên.
     """
 
     members = get_members(
@@ -85,7 +89,9 @@ def get_project_members(
         statusCode=status.HTTP_200_OK,
         message="Lấy danh sách thành viên thành công",
         data=[
-            ResearchMemberResponse.model_validate(member).model_dump()
+            ResearchMemberResponse.model_validate(
+                member
+            ).model_dump()
             for member in members
         ],
         request=request,
@@ -94,6 +100,7 @@ def get_project_members(
 
 # =========================================================
 # DELETE /research-projects/{project_id}/members/{user_id}
+# Xóa thành viên
 # =========================================================
 @router.delete(
     "/{project_id}/members/{user_id}",

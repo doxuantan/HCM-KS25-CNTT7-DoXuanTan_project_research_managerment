@@ -7,8 +7,7 @@ class ResearchMemberBase(BaseModel):
     role: str = "MEMBER"
 
 
-class ResearchMemberCreate(ResearchMemberBase):
-    project_id: int
+class ResearchMemberCreate(BaseModel):
     user_id: int
 
 

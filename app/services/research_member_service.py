@@ -16,12 +16,16 @@ def add_member(
     current_user_id: int,
 ):
     """
-    Owner thêm user vào project.
+    OWNER thêm user vào project.
     Không cho thêm trùng.
     """
 
     # Tìm project
-    project = db.query(ResearchProject).filter(ResearchProject.id == project_id).first()
+    project = (
+        db.query(ResearchProject)
+        .filter(ResearchProject.id == project_id)
+        .first()
+    )
 
     if project is None:
         raise HTTPException(
@@ -29,7 +33,7 @@ def add_member(
             detail="Đề tài nghiên cứu không tồn tại",
         )
 
-    # Kiểm tra OWNER
+    # Chỉ OWNER mới được thêm thành viên
     if project.owner_id != current_user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -37,7 +41,11 @@ def add_member(
         )
 
     # Kiểm tra user tồn tại
-    user = db.query(User).filter(User.id == user_id).first()
+    user = (
+        db.query(User)
+        .filter(User.id == user_id)
+        .first()
+    )
 
     if user is None:
         raise HTTPException(
@@ -45,7 +53,7 @@ def add_member(
             detail="Người dùng không tồn tại",
         )
 
-    # Kiểm tra đã là member chưa
+    # Kiểm tra user đã là member chưa
     existing_member = (
         db.query(ResearchMember)
         .filter(
@@ -89,7 +97,11 @@ def get_members(
     """
 
     # Tìm project
-    project = db.query(ResearchProject).filter(ResearchProject.id == project_id).first()
+    project = (
+        db.query(ResearchProject)
+        .filter(ResearchProject.id == project_id)
+        .first()
+    )
 
     if project is None:
         raise HTTPException(
@@ -97,11 +109,13 @@ def get_members(
             detail="Đề tài nghiên cứu không tồn tại",
         )
 
-    # Kiểm tra user là OWNER
+    # OWNER được xem
     if project.owner_id == current_user_id:
         return (
             db.query(ResearchMember)
-            .filter(ResearchMember.project_id == project_id)
+            .filter(
+                ResearchMember.project_id == project_id
+            )
             .all()
         )
 
@@ -122,7 +136,11 @@ def get_members(
         )
 
     return (
-        db.query(ResearchMember).filter(ResearchMember.project_id == project_id).all()
+        db.query(ResearchMember)
+        .filter(
+            ResearchMember.project_id == project_id
+        )
+        .all()
     )
 
 
@@ -136,12 +154,16 @@ def delete_member(
     current_user_id: int,
 ):
     """
-    Owner xóa member.
+    OWNER xóa member.
     Không được xóa OWNER.
     """
 
     # Tìm project
-    project = db.query(ResearchProject).filter(ResearchProject.id == project_id).first()
+    project = (
+        db.query(ResearchProject)
+        .filter(ResearchProject.id == project_id)
+        .first()
+    )
 
     if project is None:
         raise HTTPException(
@@ -149,14 +171,14 @@ def delete_member(
             detail="Đề tài nghiên cứu không tồn tại",
         )
 
-    # Kiểm tra OWNER
+    # Chỉ OWNER mới được xóa
     if project.owner_id != current_user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Chỉ OWNER mới được xóa thành viên",
         )
 
-    # Tìm member
+    # Tìm member cần xóa
     member = (
         db.query(ResearchMember)
         .filter(
@@ -181,3 +203,5 @@ def delete_member(
 
     db.delete(member)
     db.commit()
+
+    return True

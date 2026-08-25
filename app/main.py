@@ -13,6 +13,8 @@ from app.routers.health import router as health_router
 from app.routers.user import router as users_router
 from app.routers.research_project import router as research_projects_router
 from app.routers.research_members import router as research_members_router
+from app.routers.research_task import router as research_task_router
+
 from app.core.responses import error_full
 
 
@@ -49,7 +51,7 @@ app.include_router(health_router)
 app.include_router(users_router)
 app.include_router(research_projects_router)
 app.include_router(research_members_router)
-
+app.include_router(research_task_router)
 
 # =========================
 # ROOT

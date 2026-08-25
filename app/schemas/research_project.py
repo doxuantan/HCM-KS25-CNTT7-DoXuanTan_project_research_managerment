@@ -27,7 +27,6 @@ class ResearchProjectUpdate(BaseModel):
 
     description: Optional[str] = None
 
-
 class ResearchProjectResponse(ResearchProjectBase):
     id: int
     owner_id: int

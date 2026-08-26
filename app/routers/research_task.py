@@ -80,8 +80,8 @@ def get_task_list(
     priority: str | None = None,
     assignee_id: int | None = None,
     title: str | None = None,
-    limit: int = 10,
-    offset: int = 0,
+    page: int = 1,
+    size: int = 10,
     sort_by: str = "created_at",
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -106,8 +106,8 @@ def get_task_list(
         priority=priority,
         assignee_id=assignee_id,
         title=title,
-        limit=limit,
-        offset=offset,
+        page=page,
+        size=size,
         sort_by=sort_by,
     )
 
@@ -122,8 +122,8 @@ def get_task_list(
                 for task in result["items"]
             ],
             "total": result["total"],
-            "limit": result["limit"],
-            "offset": result["offset"],
+            "page": result["page"],
+            "size": result["size"],
         },
         request=request,
     )

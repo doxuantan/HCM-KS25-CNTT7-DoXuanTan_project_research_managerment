@@ -106,12 +106,20 @@ def get_research_tasks(
     priority: str | None = None,
     assignee_id: int | None = None,
     title: str | None = None,
-    limit: int = 10,
-    offset: int = 0,
+    page: int = 1,
+    size: int = 10,
     sort_by: str = "created_at",
 ):
     """
     Lấy danh sách task của một project.
+
+    Hỗ trợ:
+    - Filter theo status
+    - Filter theo priority
+    - Filter theo assignee
+    - Search theo title
+    - Pagination page/size
+    - Sort theo created_at hoặc due_date
     """
 
     # 1. Kiểm tra user có quyền xem project
@@ -121,62 +129,78 @@ def get_research_tasks(
         user_id,
     )
 
-    # 2. Kiểm tra pagination
-    if limit < 1 or limit > 100:
+    # 2. Kiểm tra page
+    if page < 1:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Limit phải từ 1 đến 100",
+            detail="Page phải lớn hơn hoặc bằng 1",
         )
 
-    if offset < 0:
+    # 3. Kiểm tra size
+    if size < 1 or size > 100:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Offset không được nhỏ hơn 0",
+            detail="Size phải từ 1 đến 100",
         )
 
-    # 3. Kiểm tra filter
+    # 4. Tính offset
+    offset = (page - 1) * size
+
+    # 5. Kiểm tra filter
     if status_filter:
         validate_status(status_filter)
 
     if priority:
         validate_priority(priority)
 
-    # 4. Kiểm tra sort
+    # 6. Kiểm tra sort
     if sort_by not in ["created_at", "due_date"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Sort không hợp lệ",
         )
 
-    # 5. Chỉ lấy task của project hiện tại
+    # 7. Chỉ lấy task của project hiện tại
     query = (
         db.query(ResearchTask)
-        .filter(ResearchTask.project_id == project_id)
+        .filter(
+            ResearchTask.project_id == project_id
+        )
     )
-    # 6. Filter status
+
+    # 8. Filter theo status
     if status_filter:
         query = query.filter(
             ResearchTask.status == status_filter
         )
-    # 7. Filter priority
+
+    # 9. Filter theo priority
     if priority:
         query = query.filter(
             ResearchTask.priority == priority
         )
-    # 8. Filter assignee
+
+    # 10. Filter theo assignee
     if assignee_id is not None:
         query = query.filter(
             ResearchTask.assignee_id == assignee_id
         )
-    # 9. Search theo title
+
+    # 11. Search theo title
     if title:
-        query = query.filter(
-            ResearchTask.title.ilike(f"%{title}%")
-        )
-    # 10. Đếm tổng số task
+        title = title.strip()
+
+        if title:
+            query = query.filter(
+                ResearchTask.title.ilike(
+                    f"%{title}%"
+                )
+            )
+
+    # 12. Đếm tổng số task
     total = query.count()
 
-    # 11. Sort
+    # 13. Sort
     if sort_by == "due_date":
         query = query.order_by(
             ResearchTask.due_date
@@ -185,18 +209,21 @@ def get_research_tasks(
         query = query.order_by(
             ResearchTask.created_at.desc()
         )
-    # 12. Phân trang
+
+    # 14. Pagination
     tasks = (
         query
         .offset(offset)
-        .limit(limit)
+        .limit(size)
         .all()
     )
+
+    # 15. Trả kết quả
     return {
         "items": tasks,
         "total": total,
-        "limit": limit,
-        "offset": offset,
+        "page": page,
+        "size": size,
     }
 
 
@@ -216,7 +243,9 @@ def get_research_task_detail(
     # 1. Tìm task
     task = (
         db.query(ResearchTask)
-        .filter(ResearchTask.id == task_id)
+        .filter(
+            ResearchTask.id == task_id
+        )
         .first()
     )
 
@@ -256,7 +285,9 @@ def update_research_task(
     # 1. Tìm task
     task = (
         db.query(ResearchTask)
-        .filter(ResearchTask.id == task_id)
+        .filter(
+            ResearchTask.id == task_id
+        )
         .first()
     )
 
@@ -336,7 +367,9 @@ def update_research_task(
 
             user = (
                 db.query(User)
-                .filter(User.id == new_assignee_id)
+                .filter(
+                    User.id == new_assignee_id
+                )
                 .first()
             )
 
@@ -382,7 +415,9 @@ def delete_research_task(
     # 1. Tìm task
     task = (
         db.query(ResearchTask)
-        .filter(ResearchTask.id == task_id)
+        .filter(
+            ResearchTask.id == task_id
+        )
         .first()
     )
 
